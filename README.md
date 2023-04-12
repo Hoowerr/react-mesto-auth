@@ -15,4 +15,4 @@
 - Удаление своих фотографий.
 - Возможность оценивать фотографии.
 
-**Ссылка GitHub Pages:** https://hoowerr.github.io/mesto-react-auth/
+**Ссылка GitHub Pages:** https://hoowerr.github.io/react-mesto-auth/
