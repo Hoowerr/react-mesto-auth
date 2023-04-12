@@ -21,7 +21,10 @@ function PopupWithForm({
           onSubmit={onSubmit}
         >
           {children}
-          <button className="popup__button popup__submit-add" type="submit">
+          <button
+            className="popup__button button popup__submit-add"
+            type="submit"
+          >
             {buttonText || "Сохранить"}
           </button>
         </form>

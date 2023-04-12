@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import Card from "./Card";
 import { CurrentUserContext } from "../contexts/CurrentUserContext";
+import Header from "./Header";
 
 function Main({
   cards,
@@ -10,11 +11,19 @@ function Main({
   onCardClick,
   onCardLike,
   onCardDelete,
+  onSignout,
+  email,
 }) {
   const currentUser = useContext(CurrentUserContext);
 
   return (
-    <div>
+    <>
+      <Header
+        buttonText="Выйти"
+        buttonLink="/sign-in"
+        onSignout={onSignout}
+        email={email}
+      />
       <main className="content">
         <section className="profile">
           <div className="profile__container">
@@ -53,14 +62,14 @@ function Main({
             <Card
               card={card}
               key={card._id}
-              onCardClick={onCardClick}
               onCardLike={onCardLike}
+              onCardClick={onCardClick}
               onCardDelete={onCardDelete}
             />
           ))}
         </section>
       </main>
-    </div>
+    </>
   );
 }
 export default Main;

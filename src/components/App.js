@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-import Header from "./Header";
+import React, { useEffect, useState, useCallback } from "react";
 import Main from "./Main";
 import Footer from "./Footer";
 import ImagePopup from "./ImagePopup";
@@ -9,6 +8,12 @@ import EditProfilePopup from "./EditProfilePopup";
 import EditAvatarPopup from "./EditAvatarPopup";
 import AddPlacePopup from "./AddPlacePopup";
 import DeleteCardPopup from "./DeleteCardPopup";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import Login from "./Login";
+import Register from "./Register";
+import ProtectedRoute from "./ProtectedRoute";
+import InfoTooltip from "./InfoTooltip";
+import auth from "../utils/Auth";
 
 function App() {
   const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] = useState(false);
@@ -19,15 +24,85 @@ function App() {
   const [cards, setCards] = useState([]);
   const [onDeleteCard, setOnDeleteCard] = useState(false);
   const [cardDeleteId, setCardDeleteId] = useState(null);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const navigate = useNavigate();
+  const [isInfoTooltipOpen, setIsInfoTooltipOpen] = useState(false);
+  const [isInfoTooltipMessage, setIsInfoTooltipMessage] = useState("");
+  const [isRegistrationSuccess, setIsRegistrationSuccess] = useState(false);
+
+  const [email, setEmail] = useState("");
+
+  const tokenCheck = useCallback(() => {
+    const token = localStorage.getItem("token");
+    if (token && !loggedIn) {
+      auth
+        .checkToken(token)
+        .then((res) => {
+          if (res) {
+            setLoggedIn(true);
+            navigate("/mesto-react", { replace: true });
+            setEmail(res.data.email);
+          }
+        })
+        .catch((err) => console.log(err));
+    }
+  }, [loggedIn, navigate]);
 
   useEffect(() => {
-    Promise.all([api.getUserInfo(), api.getInitialCards()])
-      .then(([userRes, cardsRes]) => {
-        setCurrentUser(userRes);
-        setCards(cardsRes);
+    tokenCheck();
+    if (loggedIn) {
+      Promise.all([api.getUserInfo(), api.getInitialCards()])
+        .then(([userRes, cardsRes]) => {
+          setCurrentUser(userRes);
+          setCards(cardsRes);
+        })
+        .catch((err) => console.log(err));
+    }
+  }, [loggedIn, tokenCheck]);
+
+  function handleLogin(userData) {
+    auth
+      .login(userData)
+      .then((res) => {
+        if (res.token) {
+          localStorage.setItem("token", res.token);
+          setLoggedIn(true);
+          setEmail(userData.email);
+          navigate("/", { replace: true });
+        }
       })
-      .catch((err) => console.log(err));
-  }, []);
+      .catch((err) => {
+        console.log(err);
+        setIsRegistrationSuccess(false);
+        handleSignup("Что-то пошло не так! Попробуйте еще раз.");
+      });
+  }
+
+  function handleRegister(regUserData) {
+    auth
+      .register(regUserData)
+      .then(() => {
+        navigate("/sign-in", { replace: true });
+        setIsRegistrationSuccess(true);
+        handleSignup("Вы успешно зарегистрировались!");
+      })
+      .catch((err) => {
+        console.log(err);
+        setIsRegistrationSuccess(false);
+        handleSignup("Что-то пошло не так! Попробуйте еще раз.");
+      });
+  }
+
+  function handleSignup(message) {
+    setIsInfoTooltipMessage(message);
+    setIsInfoTooltipOpen(true);
+  }
+
+  function handleSignout() {
+    setLoggedIn(false);
+    localStorage.removeItem("token");
+    navigate("/sign-in", { replace: true });
+  }
 
   function handleCardLike(card) {
     const isLiked = card.likes.some((i) => i._id === currentUser._id);
@@ -98,23 +173,60 @@ function App() {
     setIsEditAvatarPopupOpen(false);
     setSelectedCard(null);
     setOnDeleteCard(false);
+    setIsInfoTooltipOpen(false);
   }
 
   return (
     <div>
       <div className="page">
         <CurrentUserContext.Provider value={currentUser}>
-          <Header />
-          <Main
-            onEditProfile={setIsEditProfilePopupOpen}
-            onAddPlace={setIsAddPlacePopupOpen}
-            onEditAvatar={setIsEditAvatarPopupOpen}
-            onCardClick={setSelectedCard}
-            onCardLike={handleCardLike}
-            onCardDelete={handleCardDelete}
-            isDeleteCard={deleteCardPopup}
-            cards={cards}
-          />
+          <Routes>
+            <Route
+              path="/"
+              element={
+                loggedIn ? (
+                  <Navigate to="/mesto-react" replace />
+                ) : (
+                  <Navigate to="/sign-up" replace />
+                )
+              }
+            />
+            <Route
+              path="/sign-in"
+              element={
+                <Login onLogin={handleLogin} title="Вход" buttonText="Войти" />
+              }
+            />
+            <Route
+              path="/sign-up"
+              element={
+                <Register
+                  onRegister={handleRegister}
+                  title="Регистрация"
+                  buttonText="Зарегистрироваться"
+                />
+              }
+            />
+            <Route
+              path="/mesto-react"
+              element={
+                <ProtectedRoute
+                  element={Main}
+                  onEditProfile={setIsEditProfilePopupOpen}
+                  onAddPlace={setIsAddPlacePopupOpen}
+                  onEditAvatar={setIsEditAvatarPopupOpen}
+                  onCardClick={setSelectedCard}
+                  onCardLike={handleCardLike}
+                  onCardDelete={handleCardDelete}
+                  isDeleteCard={deleteCardPopup}
+                  cards={cards}
+                  loggedIn={loggedIn}
+                  email={email}
+                  onSignout={handleSignout}
+                />
+              }
+            />
+          </Routes>
           <Footer />
 
           <EditProfilePopup
@@ -141,6 +253,12 @@ function App() {
           />
 
           <ImagePopup card={selectedCard} onClose={closeAllPopups} />
+          <InfoTooltip
+            isOpen={isInfoTooltipOpen}
+            message={isInfoTooltipMessage}
+            isSuccess={isRegistrationSuccess}
+            onClose={closeAllPopups}
+          />
         </CurrentUserContext.Provider>
       </div>
       <template id="idElements"></template>
