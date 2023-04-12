@@ -208,7 +208,7 @@ function App() {
               }
             />
             <Route
-              path="/mesto-react"
+              path="/react-mesto-auth"
               element={
                 <ProtectedRoute
                   element={Main}
