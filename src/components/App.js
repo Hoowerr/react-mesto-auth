@@ -40,7 +40,7 @@ function App() {
         .then((res) => {
           if (res) {
             setLoggedIn(true);
-            navigate("/mesto-react", { replace: true });
+            navigate("/react-mesto-auth", { replace: true });
             setEmail(res.data.email);
           }
         })
@@ -185,7 +185,7 @@ function App() {
               path="/"
               element={
                 loggedIn ? (
-                  <Navigate to="/mesto-react" replace />
+                  <Navigate to="/react-mesto-auth" replace />
                 ) : (
                   <Navigate to="/sign-up" replace />
                 )
